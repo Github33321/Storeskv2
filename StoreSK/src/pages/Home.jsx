@@ -1,3 +1,4 @@
+// Home.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
@@ -250,171 +251,201 @@ export default function Home() {
     }
 
     return (
-        <div className="home">
-            {/* HERO */}
-            <section className="hero-poster hero-poster--v2">
-                <div className="hero-poster__overlay" aria-hidden="true" />
+        <div className="steamPage">
+            {/* Боковой фон (одна картинка на весь экран) */}
+            <div className="steamPage__sides" aria-hidden="true" />
 
-                {/* квадратики */}
-                <div className="hero-cover__floats" aria-hidden="true">
-                    <div className="float float--1"><IconChip /></div>
-                    <div className="float float--2"><IconPhone /></div>
-                    <div className="float float--3"><IconHeadset /></div>
-                    <div className="float float--4"><IconLaptop /></div>
-                    <div className="float float--5"><IconBolt /></div>
-                </div>
+            {/* ✅ Квадратики по всему сайту (под рамкой, над боковым фоном) */}
+            <div className="steamPage__floats" aria-hidden="true">
+                <div className="float float--a"><IconChip /></div>
+                <div className="float float--b"><IconPhone /></div>
+                <div className="float float--c"><IconHeadset /></div>
+                <div className="float float--d"><IconLaptop /></div>
+                <div className="float float--e"><IconBolt /></div>
 
-                <div className="hero-poster__content">
-                    <h1 className="hero-poster__title">
-                        <span className="hero-v2__titleTop">Покупай технику в </span>
-                        <span className="hero-v2__titleBrand">
-              <span className="gradient-text gradient-text--strong">StoreSK</span>
-            </span>
-                    </h1>
+                <div className="float float--f"><IconChip /></div>
+                <div className="float float--g"><IconPhone /></div>
+                <div className="float float--h"><IconHeadset /></div>
+                <div className="float float--i"><IconLaptop /></div>
+                <div className="float float--j"><IconBolt /></div>
+            </div>
 
-                    <p className="hero-poster__subtitle">
-                        Оригинальная техника и аксессуары — честные цены, быстрый заказ и удобная доставка.
-                    </p>
+            {/* Центральная рамка/панель (передний план) */}
+            <div className="steamFrame">
+                <div className="home">
+                    {/* HERO */}
+                    <section className="hero-poster hero-poster--v2">
+                        <div className="hero-poster__overlay" aria-hidden="true" />
 
-                    <div className="hero-poster__actions">
-                        <Link className="btn btn--primary" to="/catalog">Открыть каталог</Link>
-                        <Link className="btn btn--ghost" to="/cart">Корзина</Link>
-                    </div>
-                </div>
+                        {/* квадратики (как раньше, внутри HERO) */}
+                        <div className="hero-cover__floats" aria-hidden="true">
+                            <div className="float float--1"><IconChip /></div>
+                            <div className="float float--2"><IconPhone /></div>
+                            <div className="float float--3"><IconHeadset /></div>
+                            <div className="float float--4"><IconLaptop /></div>
+                            <div className="float float--5"><IconBolt /></div>
+                        </div>
 
-                <div className="hero-poster__fade" aria-hidden="true" />
-            </section>
+                        <div className="hero-poster__content">
+                            <h1 className="hero-poster__title">
+                                <span className="hero-v2__titleTop">Покупай технику в </span>
+                                <span className="hero-v2__titleBrand">
+                                    <span className="gradient-text gradient-text--strong">StoreSK</span>
+                                </span>
+                            </h1>
 
-            {/* КАТАЛОГ */}
-            <section className="home-block">
-                <div className="home-block__head">
-                    <h2 className="home-block__title">Каталог</h2>
-                </div>
+                            <p className="hero-poster__subtitle">
+                                Оригинальная техника и аксессуары — честные цены, быстрый заказ и удобная доставка.
+                            </p>
 
-                {catsLoading ? (
-                    <div className="catalogRow">
-                        {Array.from({ length: 6 }).map((_, i) => (
-                            <div key={i} className="skeleton skeleton--cat" />
-                        ))}
-                    </div>
-                ) : catsErr ? (
-                    <div className="home-note">
-                        Не удалось загрузить каталог: <span className="mono">{catsErr}</span>
-                    </div>
-                ) : (
-                    <>
-                        <div className="catalogRow">
-                            {shownCats.map((c) => {
-                                const q = c.slug || c.id;
-                                return (
-                                    <Link
-                                        key={c.id}
-                                        className="catalogCard"
-                                        to={q ? `/catalog?category=${encodeURIComponent(q)}` : "/catalog"}
-                                    >
-                                        <div className="catalogCard__media">
-                                            {c.image ? (
-                                                <img src={imgUrl(c.image)} alt={c.title} loading="lazy" />
+                            <div className="hero-poster__actions">
+                                <Link className="btn btn--primary" to="/catalog">
+                                    Открыть каталог
+                                </Link>
+                                <Link className="btn btn--ghost" to="/cart">
+                                    Корзина
+                                </Link>
+                            </div>
+                        </div>
+
+                        <div className="hero-poster__fade" aria-hidden="true" />
+                    </section>
+
+                    {/* КАТАЛОГ */}
+                    <section className="home-block">
+                        <div className="home-block__head">
+                            <h2 className="home-block__title">Каталог</h2>
+                        </div>
+
+                        {catsLoading ? (
+                            <div className="catalogRow">
+                                {Array.from({ length: 6 }).map((_, i) => (
+                                    <div key={i} className="skeleton skeleton--cat" />
+                                ))}
+                            </div>
+                        ) : catsErr ? (
+                            <div className="home-note">
+                                Не удалось загрузить каталог: <span className="mono">{catsErr}</span>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="catalogRow">
+                                    {shownCats.map((c) => {
+                                        const q = c.slug || c.id;
+                                        return (
+                                            <Link
+                                                key={c.id}
+                                                className="catalogCard"
+                                                to={q ? `/catalog?category=${encodeURIComponent(q)}` : "/catalog"}
+                                            >
+                                                <div className="catalogCard__media">
+                                                    {c.image ? (
+                                                        <img src={imgUrl(c.image)} alt={c.title} loading="lazy" />
+                                                    ) : (
+                                                        <div className="catalogCard__ph">{c.title}</div>
+                                                    )}
+                                                </div>
+
+                                                <div className="catalogCard__label">{c.title}</div>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* ✅ кнопка снизу (красивая) */}
+                                {cats.length > CATS_INITIAL ? (
+                                    <div className="catalogMore">
+                                        <button
+                                            type="button"
+                                            className="catalogMore__btnFancy"
+                                            onClick={() => setShowAllCats((v) => !v)}
+                                            aria-expanded={showAllCats}
+                                        >
+                                            <span className="catalogMore__btnIcon" aria-hidden="true">
+                                                {showAllCats ? "↑" : "↓"}
+                                            </span>
+                                            <span className="catalogMore__btnText">
+                                                {showAllCats ? "Свернуть категории" : "Показать все категории"}
+                                            </span>
+                                            <span className="catalogMore__btnGlow" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                ) : null}
+                            </>
+                        )}
+                    </section>
+
+                    {/* НОВИНКИ */}
+                    <section className="home-block">
+                        <div className="home-block__head">
+                            <h2 className="home-block__title">Новые поступления</h2>
+                            <Link className="home-block__link" to="/catalog">
+                                Все новинки
+                            </Link>
+                        </div>
+
+                        {newLoading ? (
+                            <div className="newGrid">
+                                {Array.from({ length: 8 }).map((_, i) => (
+                                    <div key={i} className="skeleton skeleton--new" />
+                                ))}
+                            </div>
+                        ) : newErr ? (
+                            <div className="home-note">
+                                Не удалось загрузить новинки: <span className="mono">{newErr}</span>
+                            </div>
+                        ) : (
+                            <div className="newGrid">
+                                {newItems.map((p) => (
+                                    <article key={p.id} className="newCard">
+                                        <div className="newCard__media">
+                                            {p.image ? (
+                                                <img src={imgUrl(p.image)} alt={p.title} loading="lazy" />
                                             ) : (
-                                                <div className="catalogCard__ph">{c.title}</div>
+                                                <div className="newCard__ph">{p.title.slice(0, 1)}</div>
                                             )}
                                         </div>
 
-                                        <div className="catalogCard__label">{c.title}</div>
+                                        <div className="newCard__body">
+                                            <div className="newCard__title" title={p.title}>
+                                                {p.title}
+                                            </div>
 
-                                    </Link>
-                                );
-                            })}
-                        </div>
+                                            <div className="newCard__stock">
+                                                <span className={`dot ${p.inStock ? "dot--ok" : "dot--no"}`} />
+                                                {p.inStock ? "В наличии" : "Нет в наличии"}
+                                            </div>
 
-                        {/* ✅ кнопка снизу (красивая) */}
-                        {cats.length > CATS_INITIAL ? (
-                            <div className="catalogMore">
-                                <button
-                                    type="button"
-                                    className="catalogMore__btnFancy"
-                                    onClick={() => setShowAllCats((v) => !v)}
-                                    aria-expanded={showAllCats}
-                                >
-                  <span className="catalogMore__btnIcon" aria-hidden="true">
-                    {showAllCats ? "↑" : "↓"}
-                  </span>
-                                    <span className="catalogMore__btnText">
-                    {showAllCats ? "Свернуть категории" : "Показать все категории"}
-                  </span>
-                                    <span className="catalogMore__btnGlow" aria-hidden="true" />
-                                </button>
+                                            <div className="newCard__prices">
+                                                <div className="newCard__price">{formatPriceRub(p.price) || "Цена уточняется"}</div>
+                                                {p.oldPrice ? <div className="newCard__old">{formatPriceRub(p.oldPrice)}</div> : null}
+                                            </div>
+
+                                            <button
+                                                className="btn btn--primary btn--wide newCard__btnBuy"
+                                                onClick={() => onBuy(p)}
+                                                disabled={!p.variantId || !p.inStock}
+                                                type="button"
+                                            >
+                                                Купить
+                                            </button>
+
+                                            <button
+                                                className="btn btn--ghost btn--wide newCard__btnAdd"
+                                                onClick={() => onAdd(p)}
+                                                disabled={!p.variantId}
+                                                type="button"
+                                            >
+                                                Добавить в корзину
+                                            </button>
+                                        </div>
+                                    </article>
+                                ))}
                             </div>
-                        ) : null}
-                    </>
-                )}
-            </section>
-
-            {/* НОВИНКИ */}
-            <section className="home-block">
-                <div className="home-block__head">
-                    <h2 className="home-block__title">Новые поступления</h2>
-                    <Link className="home-block__link" to="/catalog">Все новинки</Link>
+                        )}
+                    </section>
                 </div>
-
-                {newLoading ? (
-                    <div className="newGrid">
-                        {Array.from({ length: 8 }).map((_, i) => (
-                            <div key={i} className="skeleton skeleton--new" />
-                        ))}
-                    </div>
-                ) : newErr ? (
-                    <div className="home-note">
-                        Не удалось загрузить новинки: <span className="mono">{newErr}</span>
-                    </div>
-                ) : (
-                    <div className="newGrid">
-                        {newItems.map((p) => (
-                            <article key={p.id} className="newCard">
-                                <div className="newCard__media">
-                                    {p.image ? (
-                                        <img src={imgUrl(p.image)} alt={p.title} loading="lazy" />
-                                    ) : (
-                                        <div className="newCard__ph">{p.title.slice(0, 1)}</div>
-                                    )}
-                                </div>
-
-                                <div className="newCard__body">
-                                    <div className="newCard__title" title={p.title}>{p.title}</div>
-
-                                    <div className="newCard__stock">
-                                        <span className={`dot ${p.inStock ? "dot--ok" : "dot--no"}`} />
-                                        {p.inStock ? "В наличии" : "Нет в наличии"}
-                                    </div>
-
-                                    <div className="newCard__prices">
-                                        <div className="newCard__price">{formatPriceRub(p.price) || "Цена уточняется"}</div>
-                                        {p.oldPrice ? <div className="newCard__old">{formatPriceRub(p.oldPrice)}</div> : null}
-                                    </div>
-
-                                    <button
-                                        className="btn btn--primary btn--wide newCard__btnBuy"
-                                        onClick={() => onBuy(p)}
-                                        disabled={!p.variantId || !p.inStock}
-                                        type="button"
-                                    >
-                                        Купить
-                                    </button>
-
-                                    <button
-                                        className="btn btn--ghost btn--wide newCard__btnAdd"
-                                        onClick={() => onAdd(p)}
-                                        disabled={!p.variantId}
-                                        type="button"
-                                    >
-                                        Добавить в корзину
-                                    </button>
-                                </div>
-                            </article>
-                        ))}
-                    </div>
-                )}
-            </section>
+            </div>
         </div>
     );
 }
