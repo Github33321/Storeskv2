@@ -1,6 +1,6 @@
 // Home.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 
 // ---------- icons (inline, no deps) ----------
@@ -170,6 +170,8 @@ function normalizeProducts(raw) {
 }
 
 export default function Home() {
+    const navigate = useNavigate();
+
     const [cats, setCats] = useState([]);
     const [newItems, setNewItems] = useState([]);
 
@@ -241,10 +243,13 @@ export default function Home() {
         }
     }
 
+    // ✅ Кнопка "Купить" — добавляет в корзину и переносит на страницу товара
     async function onBuy(p) {
         if (!p?.variantId || !p.inStock) return;
         try {
             await api.cartAdd(p.variantId, 1);
+            const slugOrId = encodeURIComponent(p.slug || p.id);
+            navigate(`/product/${slugOrId}`);
         } catch (e) {
             console.error(e);
         }
@@ -417,7 +422,6 @@ export default function Home() {
                                     })}
                                 </div>
 
-                                {/* ✅ кнопка снизу (красивая) */}
                                 {cats.length > CATS_INITIAL ? (
                                     <div className="catalogMore">
                                         <button
@@ -458,51 +462,78 @@ export default function Home() {
                             </div>
                         ) : (
                             <div className="newGrid">
-                                {newItems.map((p) => (
-                                    <article key={p.id} className="newCard">
-                                        <div className="newCard__media">
-                                            {p.image ? (
-                                                <img src={imgUrl(p.image)} alt={p.title} loading="lazy" />
-                                            ) : (
-                                                <div className="newCard__ph">{p.title.slice(0, 1)}</div>
-                                            )}
-                                        </div>
+                                {newItems.map((p) => {
+                                    const slugOrId = encodeURIComponent(p.slug || p.id);
+                                    const productHref = `/product/${slugOrId}`;
 
-                                        <div className="newCard__body">
-                                            <div className="newCard__title" title={p.title}>
-                                                {p.title}
+                                    return (
+                                        <Link key={p.id} className="newCard" to={productHref}>
+                                            <div className="newCard__media">
+                                                {p.image ? (
+                                                    <img src={imgUrl(p.image)} alt={p.title} loading="lazy" />
+                                                ) : (
+                                                    <div className="newCard__ph">{p.title.slice(0, 1)}</div>
+                                                )}
                                             </div>
 
-                                            <div className="newCard__stock">
-                                                <span className={`dot ${p.inStock ? "dot--ok" : "dot--no"}`} />
-                                                {p.inStock ? "В наличии" : "Нет в наличии"}
+                                            <div className="newCard__body">
+                                                <div className="newCard__title" title={p.title}>
+                                                    {p.title}
+                                                </div>
+
+                                                <div className="newCard__stock">
+                                                    <span className={`dot ${p.inStock ? "dot--ok" : "dot--no"}`} />
+                                                    {p.inStock ? "В наличии" : "Нет в наличии"}
+                                                </div>
+
+                                                {/* ✅ красивые цены + старая = текущая * 1.0866 */}
+                                                <div className="newCard__prices">
+                                                    {p.price ? (() => {
+                                                        const price = Math.round(Number(p.price));
+                                                        const oldPrice = Math.round(price * 1.0866); // +8.66%
+                                                        return (
+                                                            <div className="newCard__priceRow">
+                                                                <div className="newCard__price">{formatPriceRub(price)}</div>
+                                                                <div className="newCard__old">{formatPriceRub(oldPrice)}</div>
+
+                                                            </div>
+                                                        );
+                                                    })() : (
+                                                        <div className="newCard__priceMuted">Цена уточняется</div>
+                                                    )}
+                                                </div>
+
+                                                {/* ✅ Купить: добавляет и переносит на товар */}
+                                                <button
+                                                    className="btn btn--primary btn--wide newCard__btnBuy"
+                                                    onClick={(e) => {
+                                                        e.preventDefault(); // не даём Link сработать
+                                                        e.stopPropagation();
+                                                        onBuy(p);
+                                                    }}
+                                                    disabled={!p.variantId || !p.inStock}
+                                                    type="button"
+                                                >
+                                                    Купить
+                                                </button>
+
+                                                {/* ✅ Добавить: только в корзину, без перехода */}
+                                                <button
+                                                    className="btn btn--ghost btn--wide newCard__btnAdd"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        onAdd(p);
+                                                    }}
+                                                    disabled={!p.variantId}
+                                                    type="button"
+                                                >
+                                                    Добавить в корзину
+                                                </button>
                                             </div>
-
-                                            <div className="newCard__prices">
-                                                <div className="newCard__price">{formatPriceRub(p.price) || "Цена уточняется"}</div>
-                                                {p.oldPrice ? <div className="newCard__old">{formatPriceRub(p.oldPrice)}</div> : null}
-                                            </div>
-
-                                            <button
-                                                className="btn btn--primary btn--wide newCard__btnBuy"
-                                                onClick={() => onBuy(p)}
-                                                disabled={!p.variantId || !p.inStock}
-                                                type="button"
-                                            >
-                                                Купить
-                                            </button>
-
-                                            <button
-                                                className="btn btn--ghost btn--wide newCard__btnAdd"
-                                                onClick={() => onAdd(p)}
-                                                disabled={!p.variantId}
-                                                type="button"
-                                            >
-                                                Добавить в корзину
-                                            </button>
-                                        </div>
-                                    </article>
-                                ))}
+                                        </Link>
+                                    );
+                                })}
                             </div>
                         )}
                     </section>

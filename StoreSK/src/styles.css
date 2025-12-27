@@ -1108,3 +1108,476 @@ button{ -webkit-tap-highlight-color: transparent }
     gap: 10px;
   }
 }
+/* =========================
+   NAVBAR — glass / aligned to steamFrame
+   ========================= */
+
+.nav{
+  position: sticky;
+  top: 0;
+  z-index: 60;
+
+  /* ✅ более прозрачная панель + стекло */
+  background: linear-gradient(180deg, rgba(0,0,0,.32), rgba(0,0,0,.12));
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 16px 60px rgba(0,0,0,.28);
+}
+
+/* ✅ ВАЖНО: выравнивание по рамке (steamFrame) */
+.nav__inner{
+  width: min(var(--FRAME_MAX_W, 1160px), calc(100% - 28px));
+  margin: 0 auto;
+  padding: 12px var(--FRAME_PAD_X, 22px);
+
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* =========================
+   BRAND
+   ========================= */
+
+.brand{
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+  min-width: 240px;
+}
+
+.brand__logo{
+  height: 60px;     /* ✅ логотип крупнее */
+  width: auto;
+  display: block;
+  object-fit: contain;
+  filter: drop-shadow(0 14px 28px rgba(0,0,0,.55));
+}
+
+.brand__title{
+  font-weight: 1000;
+  font-size: 30px;  /* ✅ название крупнее */
+  letter-spacing: -1px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.brand__titleMain{
+  color: rgba(255,255,255,.92);
+  text-shadow: 0 0 18px rgba(255,178,0,.10), 0 0 42px rgba(0,0,0,.26);
+}
+
+.brand__titleAccent{
+  margin-left: 2px;
+  background: linear-gradient(135deg, #fff2d6 0%, #ffd08a 22%, #ffb200 52%, #ff6a00 78%, #ff3d00 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 14px rgba(255,210,150,.26), 0 0 42px rgba(255,106,0,.16);
+}
+
+/* =========================
+   SEARCH
+   ========================= */
+
+.nav__search{
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.14);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.18) inset;
+  min-width: 260px;
+}
+
+.nav__searchIcon{
+  opacity: .72;
+  font-weight: 1000;
+  margin-left: 4px;
+  user-select: none;
+}
+
+.nav__input{
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: rgba(255,255,255,.92);
+  font-weight: 850;
+  font-size: 13px;
+}
+
+.nav__input::placeholder{
+  color: rgba(255,255,255,.52);
+}
+
+.nav__searchBtn{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.90);
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-weight: 1000;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+  white-space: nowrap;
+}
+
+.nav__searchBtn:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,178,0,.24);
+  background: rgba(0,0,0,.18);
+  box-shadow: 0 0 24px rgba(255,178,0,.10);
+}
+
+/* =========================
+   CONTACT CHIPS
+   ========================= */
+
+.nav__contacts{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navChip{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 999px;
+
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.14);
+  color: rgba(255,255,255,.88);
+  font-weight: 950;
+  font-size: 13px;
+  white-space: nowrap;
+
+  box-shadow: 0 0 0 1px rgba(0,0,0,.18) inset;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+.navChip:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,178,0,.22);
+  background: rgba(0,0,0,.18);
+  box-shadow: 0 0 22px rgba(255,178,0,.10);
+}
+
+.navChip__icon{
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.10);
+  color: rgba(255,234,205,.95);
+}
+
+/* =========================
+   CART
+   ========================= */
+
+.cart-btn{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.16);
+  color: rgba(255,255,255,.92);
+  font-weight: 1000;
+
+  box-shadow: 0 0 0 1px rgba(0,0,0,.18) inset;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
+  white-space: nowrap;
+}
+
+.cart-btn:hover{
+  transform: translateY(-1px);
+  border-color: rgba(255,178,0,.24);
+  background: rgba(0,0,0,.20);
+  box-shadow: 0 0 24px rgba(255,178,0,.10);
+}
+
+.cart-btn__label{
+  font-size: 13px;
+  letter-spacing: .1px;
+}
+
+.cart-btn__badge{
+  position: absolute;
+  top: -6px;
+  right: -6px;
+
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 1000;
+
+  color: rgba(16,8,2,.98);
+  background: linear-gradient(135deg, rgba(255,242,220,.95), rgba(255,178,0,.92), rgba(255,106,0,.92));
+  border: 1px solid rgba(0,0,0,.22);
+  box-shadow: 0 10px 24px rgba(0,0,0,.35);
+}
+
+/* =========================
+   Responsive
+   ========================= */
+
+@media (max-width: 980px){
+  .brand{ min-width: 200px; }
+  .brand__title{ font-size: 26px; }
+  .brand__logo{ height: 54px; }
+}
+
+@media (max-width: 920px){
+  .navChip__text{ display: none; }
+  .navChip{ padding: 10px; }
+}
+
+@media (max-width: 640px){
+  .nav__searchBtn{ display: none; }
+  .cart-btn__label{ display: none; }
+  .brand__title{ font-size: 24px; }
+  .brand__logo{ height: 50px; }
+}
+/* =========================
+   FIX: расстояние между Navbar и контентом = 3px
+   (жёстко, без вариантов)
+   ========================= */
+
+/* 1) убираем верхний паддинг страницы (он чаще всего и даёт дыру) */
+.steamPage{
+  padding-top: 0 !important;
+}
+
+/* 2) делаем отступ от navbar до рамки ровно 3px */
+.steamFrame{
+  margin-top: 3px !important;
+}
+
+/* 3) на всякий случай: если у первого блока в .home есть верхний margin */
+.steamFrame > .home > section:first-child{
+  margin-top: 0 !important;
+}
+
+/* 4) если герой у тебя вылезает отрицательными margin и “создаёт” визуальную щель */
+.hero-poster--v2{
+  margin-top: 0 !important;
+}
+/* =========================
+   FIX: убрать верхнюю "дыру" и оставить 3px
+   ========================= */
+
+/* расстояние от navbar до рамки */
+.steamFrame{
+  margin-top: 3px !important;
+}
+
+/* убираем верхний паддинг контента внутри рамки (он и создаёт зазор) */
+.steamFrame > .home{
+  padding-top: 0 !important;
+  /* чтобы по бокам и снизу всё осталось красиво */
+  padding-left: var(--FRAME_PAD_X) !important;
+  padding-right: var(--FRAME_PAD_X) !important;
+  padding-bottom: var(--FRAME_PAD_Y) !important;
+}
+
+/* hero растягиваем на всю ширину рамки и прижимаем к верху */
+.hero-poster--v2{
+  margin-top: 0 !important;
+  margin-left: calc(-1 * var(--FRAME_PAD_X)) !important;
+  margin-right: calc(-1 * var(--FRAME_PAD_X)) !important;
+}
+/* =========================
+   NEW CARD — nicer title + discount plate
+   (paste at the very end)
+   ========================= */
+
+/* красивее заголовок товара */
+.newCard__title{
+  font-weight: 1000;
+  font-size: 15px;
+  line-height: 1.35;
+  color: rgba(255,255,255,.96);
+
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  letter-spacing: -.2px;
+  text-shadow: 0 8px 24px rgba(0,0,0,.45);
+}
+
+/* блок цен */
+.newCard__prices{
+  margin-top: 10px;
+}
+
+.newCard__priceRow{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* текущая цена */
+.newCard__price{
+  font-size: 20px;
+  font-weight: 1000;
+  color: rgba(255,234,205,.98);
+  text-shadow: 0 0 20px rgba(255,178,0,.16);
+}
+
+/* старая цена (перечёркнутая) */
+.newCard__old{
+  font-size: 12px;
+  font-weight: 900;
+  color: rgba(255,255,255,.52);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: rgba(255,120,60,.55);
+}
+
+/* бейдж скидки */
+.newCard__discount{
+  font-size: 12px;
+  font-weight: 1000;
+  padding: 6px 10px;
+  border-radius: 999px;
+
+  color: rgba(16,8,2,.98);
+  background: linear-gradient(135deg,
+  rgba(255,242,220,.95),
+  rgba(255,178,0,.92) 55%,
+  rgba(255,106,0,.88)
+  );
+
+  border: 1px solid rgba(0,0,0,.22);
+  box-shadow: 0 10px 24px rgba(0,0,0,.32);
+}
+
+/* если цены нет */
+.newCard__priceMuted{
+  font-size: 18px;
+  font-weight: 1000;
+  color: rgba(255,255,255,.70);
+}
+/* =========================
+   NEW CARD — title bigger + display look
+   ========================= */
+
+.newCard__title{
+  font-weight: 1100;                 /* если шрифт поддерживает */
+  font-size: 18px;                   /* ✅ крупнее */
+  line-height: 1.18;
+  letter-spacing: -0.5px;
+
+  /* “крутой” плотный вид */
+  text-transform: none;
+  color: rgba(255,255,255,.97);
+  text-shadow:
+          0 10px 26px rgba(0,0,0,.55),
+          0 0 24px rgba(255,178,0,.12);
+
+  /* аккуратное ограничение */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* на больших экранах ещё чуть крупнее */
+@media (min-width: 1100px){
+  .newCard__title{
+    font-size: 19px;
+  }
+}
+/* =====================
+   CATALOG — cards like HOME "Новинки"
+   ===================== */
+
+/* чуть шире и логичнее на каталоге */
+.newGrid--catalog{
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 1200px){
+  .newGrid--catalog{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px){
+  .newGrid--catalog{ grid-template-columns: 1fr; }
+}
+
+/* кликабельная карточка — как ссылка */
+.newCard--catalog{
+  display: block;
+}
+
+/* красивее название (чётче, крупнее, лучше читается) */
+.newCard__title--pretty{
+  font-size: 15px;
+  letter-spacing: -0.2px;
+  line-height: 1.28;
+
+  /* чуть “премиум” */
+  text-shadow: 0 12px 24px rgba(0,0,0,.28);
+}
+
+/* цены в одну строку: новая + старая */
+.newCard__prices--row{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* бейдж скидки */
+.saleBadge{
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 3;
+
+  padding: 7px 10px;
+  border-radius: 999px;
+
+  font-weight: 1000;
+  font-size: 12px;
+  letter-spacing: .2px;
+
+  color: rgba(16,8,2,.98);
+  background: linear-gradient(135deg,
+  rgba(255,242,220,.96),
+  rgba(255,178,0,.94) 40%,
+  rgba(255,106,0,.92)
+  );
+
+  border: 1px solid rgba(0,0,0,.20);
+  box-shadow: 0 16px 40px rgba(0,0,0,.30);
+}
+
+/* чтобы oldPrice был заметнее на фоне */
+.newCard__old{
+  opacity: .85;
+}
