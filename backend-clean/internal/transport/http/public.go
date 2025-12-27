@@ -1,3 +1,4 @@
+// internal/transport/http/public.go
 package http
 
 import (
@@ -13,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"shop-backend/internal/models"
 	bot "shop-backend/internal/transport/http/bot"
@@ -48,7 +50,7 @@ func RegisterPublic(rg *gin.RouterGroup, db *gorm.DB) {
 			Preload("Variants", func(tx *gorm.DB) *gorm.DB { return tx.Order("id ASC") }).
 			Preload("Variants.Images", func(tx *gorm.DB) *gorm.DB { return tx.Order("sort ASC") })
 
-		// Поиск по названию, описанию и ТТХ (specs)
+		// Поиск
 		if q := strings.TrimSpace(c.Query("q")); q != "" {
 			d = d.Where(
 				"title ILIKE ? OR description ILIKE ? OR specs ILIKE ?",
@@ -56,7 +58,7 @@ func RegisterPublic(rg *gin.RouterGroup, db *gorm.DB) {
 			)
 		}
 
-		// Фильтр по категории (id или slug)
+		// Категория (id или slug)
 		if cat := strings.TrimSpace(c.Query("category")); cat != "" {
 			var id uint
 			if n, err := strconv.Atoi(cat); err == nil && n > 0 {
@@ -74,6 +76,14 @@ func RegisterPublic(rg *gin.RouterGroup, db *gorm.DB) {
 			}
 		}
 
+		// total
+		var total int64
+		if err := d.Count(&total).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		// page
 		if err := d.
 			Order("products.id DESC").
 			Limit(p.Limit).
@@ -83,8 +93,12 @@ func RegisterPublic(rg *gin.RouterGroup, db *gorm.DB) {
 			return
 		}
 
-		// Ничего дополнительно «собирать» не нужно — поле Specs уже в модели и уходит в JSON
-		c.JSON(http.StatusOK, products)
+		c.JSON(http.StatusOK, gin.H{
+			"items":  products,
+			"total":  total,
+			"limit":  p.Limit,
+			"offset": p.Offset,
+		})
 	})
 
 	/* ---------------- PRODUCT BY SLUG ---------------- */
@@ -105,7 +119,6 @@ func RegisterPublic(rg *gin.RouterGroup, db *gorm.DB) {
 			}
 			return
 		}
-		// Поле pr.Specs присутствует и вернётся «как есть» (строкой).
 		c.JSON(http.StatusOK, pr)
 	})
 
@@ -310,10 +323,22 @@ func RegisterPublic(rg *gin.RouterGroup, db *gorm.DB) {
 
 	/* =====================  CART (cookie-based)  ===================== */
 
+	// ✅ FIX: никакого First()->ErrRecordNotFound (чтобы не было record not found в логах)
 	pub.GET("/cart", func(c *gin.Context) {
 		cartID := ensureCartCookie(c)
+
+		// гарантируем, что корзина существует (FirstOrCreate не возвращает ErrRecordNotFound)
+		if err := db.Where("id = ?", cartID).FirstOrCreate(&models.Cart{ID: cartID}).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		// грузим корзину с айтемами
 		var cart models.Cart
-		_ = db.Preload("Items").First(&cart, "id = ?", cartID).Error
+		if err := db.Preload("Items").First(&cart, "id = ?", cartID).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 
 		type ItemDTO struct {
 			ID         uint   `json:"id"`
@@ -356,6 +381,7 @@ func RegisterPublic(rg *gin.RouterGroup, db *gorm.DB) {
 		total := int64(0)
 		for _, it := range cart.Items {
 			v, ok := byID[it.VariantID]
+
 			var prod *struct {
 				ID    uint   `json:"id"`
 				Slug  string `json:"slug"`
@@ -367,6 +393,7 @@ func RegisterPublic(rg *gin.RouterGroup, db *gorm.DB) {
 				Memory       string `json:"memory"`
 				Connectivity string `json:"connectivity"`
 			}
+
 			if ok {
 				var p models.Product
 				_ = db.Select("id, slug, title").First(&p, v.ProductID).Error
@@ -391,6 +418,7 @@ func RegisterPublic(rg *gin.RouterGroup, db *gorm.DB) {
 
 			line := int64(it.Qty) * it.PriceCents
 			total += line
+
 			itemsDTO = append(itemsDTO, ItemDTO{
 				ID:         it.ID,
 				VariantID:  it.VariantID,
@@ -405,7 +433,7 @@ func RegisterPublic(rg *gin.RouterGroup, db *gorm.DB) {
 			})
 		}
 
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"id":          cartID,
 			"items":       itemsDTO,
 			"total_cents": total,
@@ -413,6 +441,7 @@ func RegisterPublic(rg *gin.RouterGroup, db *gorm.DB) {
 		})
 	})
 
+	// ✅ FIX: без First(cart_items)->ErrRecordNotFound (не будет record not found в логах)
 	pub.POST("/cart/items", func(c *gin.Context) {
 		cartID := ensureCartCookie(c)
 
@@ -421,55 +450,74 @@ func RegisterPublic(rg *gin.RouterGroup, db *gorm.DB) {
 			Qty       int  `json:"qty"`
 		}
 		if err := c.BindJSON(&req); err != nil {
-			c.JSON(400, gin.H{"error": "bad json"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 			return
 		}
 		if req.VariantID == 0 || req.Qty == 0 {
-			c.JSON(400, gin.H{"error": "variant_id and qty required"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "variant_id and qty required"})
 			return
 		}
 
 		var v models.Variant
 		if err := db.Preload("Images", func(tx *gorm.DB) *gorm.DB { return tx.Order("sort ASC") }).
 			First(&v, req.VariantID).Error; err != nil {
-			c.JSON(404, gin.H{"error": "variant not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "variant not found"})
 			return
 		}
 		if v.Stock <= 0 && req.Qty > 0 {
-			c.JSON(409, gin.H{"error": "out of stock"})
+			c.JSON(http.StatusConflict, gin.H{"error": "out of stock"})
 			return
 		}
 
-		var cart models.Cart
-		if err := db.First(&cart, "id = ?", cartID).Error; err != nil {
-			cart = models.Cart{ID: cartID}
-			_ = db.Create(&cart).Error
+		// заранее готовим снапшоты для create
+		img := ""
+		if len(v.Images) > 0 {
+			img = v.Images[0].URL
 		}
+		var p models.Product
+		_ = db.Select("id, title").First(&p, v.ProductID).Error
 
-		var item models.CartItem
-		err := db.Where("cart_id = ? AND variant_id = ?", cartID, v.ID).First(&item).Error
-		if err == nil {
-			item.Qty += req.Qty
-			if item.Qty <= 0 {
-				db.Delete(&item)
-				c.Status(204)
-				return
+		var out models.CartItem
+		var deleted bool
+
+		err := db.Transaction(func(tx *gorm.DB) error {
+			// гарантируем, что корзина существует
+			if err := tx.Where("id = ?", cartID).FirstOrCreate(&models.Cart{ID: cartID}).Error; err != nil {
+				return err
 			}
-			item.PriceCents = v.PriceCents
-			db.Save(&item)
-		} else {
+
+			// 1) пробуем обновить существующий item: qty += req.Qty, price_cents = актуальная
+			// Используем RETURNING, чтобы получить итоговый qty без SELECT.
+			var updated []models.CartItem
+			upd := tx.
+				Model(&models.CartItem{}).
+				Clauses(clause.Returning{}).
+				Where("cart_id = ? AND variant_id = ?", cartID, v.ID).
+				Updates(map[string]any{
+					"qty":         gorm.Expr("qty + ?", req.Qty),
+					"price_cents": v.PriceCents,
+				}).
+				Find(&updated)
+
+			if upd.Error != nil {
+				return upd.Error
+			}
+
+			if upd.RowsAffected > 0 && len(updated) > 0 {
+				out = updated[0]
+				if out.Qty <= 0 {
+					deleted = true
+					return tx.Delete(&models.CartItem{}, out.ID).Error
+				}
+				return nil
+			}
+
+			// 2) если не нашли — создаём новый (только если qty > 0)
 			if req.Qty < 0 {
-				c.JSON(400, gin.H{"error": "qty must be > 0 for new item"})
-				return
+				return fmt.Errorf("qty must be > 0 for new item")
 			}
-			img := ""
-			if len(v.Images) > 0 {
-				img = v.Images[0].URL
-			}
-			var p models.Product
-			_ = db.Select("id, title").First(&p, v.ProductID).Error
 
-			item = models.CartItem{
+			item := models.CartItem{
 				CartID:        cartID,
 				VariantID:     v.ID,
 				Qty:           req.Qty,
@@ -478,9 +526,25 @@ func RegisterPublic(rg *gin.RouterGroup, db *gorm.DB) {
 				SnapshotOpts:  strings.TrimSpace(strings.Join([]string{v.Color, v.Memory, v.Connectivity}, " / ")),
 				SnapshotImage: img,
 			}
-			db.Create(&item)
+			if err := tx.Create(&item).Error; err != nil {
+				return err
+			}
+			out = item
+			return nil
+		})
+
+		if err != nil {
+			// из Transaction вернётся ошибка (в т.ч. qty must be > 0...)
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
-		c.JSON(200, gin.H{"id": item.ID, "qty": item.Qty})
+
+		if deleted {
+			c.Status(http.StatusNoContent)
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"id": out.ID, "qty": out.Qty})
 	})
 
 	pub.PATCH("/cart/items/:id", func(c *gin.Context) {
@@ -489,44 +553,50 @@ func RegisterPublic(rg *gin.RouterGroup, db *gorm.DB) {
 			Qty *int `json:"qty"`
 		}
 		if err := c.BindJSON(&req); err != nil || req.Qty == nil {
-			c.JSON(400, gin.H{"error": "bad json"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "bad json"})
 			return
 		}
+
 		var item models.CartItem
 		if err := db.First(&item, id).Error; err != nil {
-			c.JSON(404, gin.H{"error": "not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
 		}
 		if *req.Qty <= 0 {
-			db.Delete(&item)
-			c.Status(204)
+			_ = db.Delete(&item).Error
+			c.Status(http.StatusNoContent)
 			return
 		}
+
 		var v models.Variant
 		if err := db.First(&v, item.VariantID).Error; err == nil {
 			if v.Stock <= 0 {
-				c.JSON(409, gin.H{"error": "out of stock"})
+				c.JSON(http.StatusConflict, gin.H{"error": "out of stock"})
 				return
 			}
 			item.PriceCents = v.PriceCents
 		}
 		item.Qty = *req.Qty
-		db.Save(&item)
-		c.JSON(200, gin.H{"id": item.ID, "qty": item.Qty})
+
+		if err := db.Save(&item).Error; err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"id": item.ID, "qty": item.Qty})
 	})
 
 	pub.DELETE("/cart/items/:id", func(c *gin.Context) {
 		if err := db.Delete(&models.CartItem{}, c.Param("id")).Error; err != nil {
-			c.JSON(500, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		c.Status(204)
+		c.Status(http.StatusNoContent)
 	})
 
 	pub.POST("/cart/clear", func(c *gin.Context) {
 		cartID := ensureCartCookie(c)
-		db.Where("cart_id = ?", cartID).Delete(&models.CartItem{})
-		c.Status(204)
+		_ = db.Where("cart_id = ?", cartID).Delete(&models.CartItem{}).Error
+		c.Status(http.StatusNoContent)
 	})
 }
 
@@ -543,34 +613,21 @@ func nz(s string) string {
 func ensureCartCookie(c *gin.Context) string {
 	const cookieName = "cart_id"
 
-	// текущая кука (если уже есть)
 	v, err := c.Cookie(cookieName)
 	id := strings.TrimSpace(v)
 	if err != nil || id == "" {
 		id = uuid.NewString()
 	}
 
+	// локалка: НЕ Secure, SameSite=Lax
 	ck := &http.Cookie{
 		Name:     cookieName,
 		Value:    id,
 		Path:     "/",
-		MaxAge:   60 * 60 * 24 * 365, // 1 год
+		MaxAge:   60 * 60 * 24 * 365,
 		HttpOnly: true,
-	}
-
-	// Определяем "боевое" окружение по хосту запроса
-	host := c.Request.Host
-	isProd := strings.HasSuffix(host, "escapestore.ru") || strings.HasSuffix(host, ".escapestore.ru")
-
-	if isProd {
-		// Прод: кука должна работать на всех поддоменах и быть cross-site
-		ck.Domain = "escapestore.ru"
-		ck.SameSite = http.SameSiteNoneMode
-		ck.Secure = true
-	} else {
-		// Дев/локально: без Domain (привязка к текущему хосту), SameSite=Lax
-		ck.SameSite = http.SameSiteLaxMode
-		ck.Secure = c.Request.TLS != nil
+		SameSite: http.SameSiteLaxMode,
+		Secure:   false,
 	}
 
 	http.SetCookie(c.Writer, ck)

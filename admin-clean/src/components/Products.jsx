@@ -12,6 +12,20 @@ import {
   uploadImageFile, // <— API вызов для загрузки файла и получения URL
 } from '../lib/api'
 
+/* =========================
+   FIX: items.map is not a function
+   + нормализация ответов API (массив / {items} / {data} / {products} / {results})
+   ========================= */
+function toArray(res) {
+  if (Array.isArray(res)) return res
+  if (Array.isArray(res?.items)) return res.items
+  if (Array.isArray(res?.data)) return res.data
+  if (Array.isArray(res?.products)) return res.products
+  if (Array.isArray(res?.results)) return res.results
+  if (Array.isArray(res?.categories)) return res.categories
+  return []
+}
+
 export default function Products() {
   const [cats, setCats] = useState([])
   const [items, setItems] = useState([])
@@ -76,8 +90,16 @@ export default function Products() {
   }
 
   const load = async () => {
-    setCats(await listCategories())
-    setItems(await listProducts())
+    try {
+      const c = await listCategories()
+      const p = await listProducts()
+      setCats(toArray(c))
+      setItems(toArray(p))
+    } catch (err) {
+      console.error('load error:', err)
+      setCats([])
+      setItems([])
+    }
   }
   useEffect(() => { load() }, [])
 

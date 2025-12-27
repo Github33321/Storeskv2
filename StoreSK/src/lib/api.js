@@ -1,23 +1,24 @@
+// lib/api.js
 const base = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
 const API = `${base}/api`
 
-function resolveUrl(path) {
+export function resolveUrl(path) {
+  if (!path) return ''
   if (path.startsWith('http://') || path.startsWith('https://')) return path
   if (path.startsWith('/')) return `${base}${path}`
   return `${API}/${path}`
 }
 
 async function request(path, { method = 'GET', headers = {}, body, raw = false } = {}) {
-  const url = path.startsWith('/api') || path.startsWith('/media') || path.startsWith('/')
-    ? resolveUrl(path)
-    : `${API}${path.startsWith('/') ? '' : '/'}${path}`
+  const url =
+      path.startsWith('/api') || path.startsWith('/media') || path.startsWith('/')
+          ? resolveUrl(path)
+          : `${API}${path.startsWith('/') ? '' : '/'}${path}`
 
   const opts = {
     method,
-    credentials: 'include',
-    headers: {
-      ...headers
-    }
+    credentials: 'include', // ✅ чтобы cookie корзины работали
+    headers: { ...headers }
   }
 
   if (body !== undefined) {
@@ -59,6 +60,7 @@ export const api = {
   health: () => request('/api/health'),
 
   categories: () => request('/api/categories'),
+
   products: (params = {}) => {
     const q = new URLSearchParams()
     if (params.q) q.set('q', params.q)
@@ -68,6 +70,7 @@ export const api = {
     const qs = q.toString()
     return request(`/api/products${qs ? `?${qs}` : ''}`)
   },
+
   productBySlug: (slug) => request(`/api/products/${encodeURIComponent(slug)}`),
 
   cart: () => request('/api/cart'),

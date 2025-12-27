@@ -614,7 +614,8 @@ button{ -webkit-tap-highlight-color: transparent }
 :root{
   /* [CHANGE] пути к картинкам */
   --SIDE_BG_URL: url("/bg/side.jpg");     /* [CHANGE] фон по бокам */
-  --CENTER_BG_URL: url("/bg/center.jpg"); /* [CHANGE] фон внутри рамки */
+  /* ✅ центр прозрачный: фон внутри рамки берём с "none", чтобы просвечивал общий фон */
+  --CENTER_BG_URL: none;                   /* [CHANGE] можно поставить url(...) если нужен рисунок */
 
   /* [CHANGE] общий фон страницы (если нужно) */
   --PAGE_BASE: #0c0b10; /* [CHANGE] */
@@ -630,7 +631,11 @@ button{ -webkit-tap-highlight-color: transparent }
   --FRAME_PAD_Y: 18px;   /* [CHANGE] верх/низ */
   --FRAME_RADIUS: 28px;  /* [CHANGE] скругление */
   --FRAME_BORDER: rgba(255,255,255,.14); /* [CHANGE] обводка */
-  --FRAME_BG_DIM: .22;   /* [CHANGE] затемнение фон-картинки в центре */
+  /* ✅ 0 = полностью прозрачный центр (рисунок не затемняем) */
+  --FRAME_BG_DIM: 0;     /* [CHANGE] затемнение фон-картинки в центре */
+
+  /* ✅ стеклянная подложка рамки (прозрачный центр) */
+  --FRAME_GLASS_BG: rgba(0,0,0,.16);
 
   /* [CHANGE] “свечения/эффекты” вокруг рамки */
   --FRAME_GLOW_1: rgba(255, 140, 60, .22); /* [CHANGE] */
@@ -695,6 +700,10 @@ button{ -webkit-tap-highlight-color: transparent }
   box-shadow: var(--FRAME_SHADOW);
   overflow: hidden;
 
+  /* ✅ прозрачный центр + блюр (glass) */
+  background: var(--FRAME_GLASS_BG);
+  backdrop-filter: blur(18px);
+
   padding: var(--FRAME_PAD_Y) var(--FRAME_PAD_X);
 }
 
@@ -707,7 +716,7 @@ button{ -webkit-tap-highlight-color: transparent }
   background:
           linear-gradient(180deg,
           rgba(0,0,0,var(--FRAME_BG_DIM)),
-          rgba(0,0,0,calc(var(--FRAME_BG_DIM) + .20))
+          rgba(0,0,0,var(--FRAME_BG_DIM))
           ),
           var(--CENTER_BG_URL) center / cover no-repeat;
   filter: saturate(1.05) contrast(1.06);
@@ -729,7 +738,7 @@ button{ -webkit-tap-highlight-color: transparent }
 }
 
 /* Контент внутри рамки — поверх фоновых слоёв */
-.steamFrame > .home{
+.steamFrame > .siteContent{
   position: relative;
   z-index: 2;
 }
@@ -760,7 +769,7 @@ button{ -webkit-tap-highlight-color: transparent }
 }
 
 /* общий отступ возвращаем для всего контента */
-.steamFrame > .home{
+.steamFrame > .siteContent{
   padding: var(--FRAME_PAD_Y) var(--FRAME_PAD_X);
 }
 
@@ -1376,7 +1385,7 @@ button{ -webkit-tap-highlight-color: transparent }
 }
 
 /* 3) на всякий случай: если у первого блока в .home есть верхний margin */
-.steamFrame > .home > section:first-child{
+.steamFrame > .siteContent > .home > section:first-child{
   margin-top: 0 !important;
 }
 
@@ -1393,14 +1402,7 @@ button{ -webkit-tap-highlight-color: transparent }
   margin-top: 3px !important;
 }
 
-/* убираем верхний паддинг контента внутри рамки (он и создаёт зазор) */
-.steamFrame > .home{
-  padding-top: 0 !important;
-  /* чтобы по бокам и снизу всё осталось красиво */
-  padding-left: var(--FRAME_PAD_X) !important;
-  padding-right: var(--FRAME_PAD_X) !important;
-  padding-bottom: var(--FRAME_PAD_Y) !important;
-}
+/* (Home) если нужно прижимать HERO кверху рамки — это делается отрицательными margin у .hero-poster--v2 */
 
 /* hero растягиваем на всю ширину рамки и прижимаем к верху */
 .hero-poster--v2{
@@ -1580,4 +1582,465 @@ button{ -webkit-tap-highlight-color: transparent }
 /* чтобы oldPrice был заметнее на фоне */
 .newCard__old{
   opacity: .85;
+}
+/* =========================
+   Catalog page polishing
+   ========================= */
+
+.catalogPage{
+  display: grid;
+  gap: 16px;
+}
+
+.catalogHead{
+  border-radius: 22px;
+  padding: 18px 18px 14px;
+  background: rgba(0,0,0,.18);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 10px 35px rgba(0,0,0,.25);
+}
+
+.catalogHead__top{
+  display:flex;
+  gap: 16px;
+  align-items:flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.catalogHead__titles{
+  min-width: 240px;
+}
+
+.catalogTitle{
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.05;
+  letter-spacing: .2px;
+  text-shadow: 0 6px 24px rgba(0,0,0,.45);
+}
+
+.catalogMeta{
+  margin-top: 8px;
+  opacity: .75;
+  font-size: 14px;
+}
+
+.catalogSearch{
+  width: min(420px, 100%);
+  display:grid;
+  gap: 8px;
+  padding: 12px 12px 12px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+}
+
+.catalogSearch__label{
+  font-size: 13px;
+  opacity: .75;
+}
+
+.catalogSearch__input{
+  width: 100%;
+  height: 42px;
+  border-radius: 14px;
+  padding: 0 14px;
+  outline: none;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.20);
+  color: inherit;
+}
+
+.catalogSearch__input:focus{
+  border-color: rgba(255,170,0,.30);
+  box-shadow: 0 0 0 3px rgba(255,170,0,.12);
+}
+
+.catalogHead__pills{
+  margin-top: 14px;
+}
+
+.catalogBody{
+  border-radius: 22px;
+  padding: 14px;
+  background: rgba(0,0,0,.12);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.06);
+}
+
+.catalogAlert{
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: rgba(255, 80, 80, .12);
+  border: 1px solid rgba(255, 80, 80, .25);
+}
+
+.catalogEmpty{
+  margin-top: 18px;
+  border-radius: 18px;
+  padding: 18px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  text-align: center;
+}
+
+.catalogEmpty__title{
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.catalogEmpty__text{
+  margin-top: 6px;
+  opacity: .75;
+  font-size: 14px;
+}
+
+/* --- Pagination --- */
+.pagination{
+  margin-top: 18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(0,0,0,.22);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+.pgNums{
+  display:flex;
+  gap: 8px;
+  align-items:center;
+  flex-wrap: wrap;
+  justify-content:center;
+}
+
+.pgDots{
+  opacity: .65;
+  padding: 0 6px;
+  user-select: none;
+}
+
+.pgBtn{
+  border-radius: 999px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  cursor:pointer;
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
+}
+
+.pgBtn:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.18);
+}
+
+.pgBtn:disabled{
+  opacity: .45;
+  cursor:not-allowed;
+  transform:none;
+}
+
+.pgNum{
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  cursor:pointer;
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
+}
+
+.pgNum:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.18);
+}
+
+.pgNum.isActive{
+  background: rgba(255,170,0,.18);
+  border-color: rgba(255,170,0,.35);
+  box-shadow: 0 0 0 1px rgba(255,170,0,.20) inset;
+}
+/* =========================
+   Catalog page polishing (safe)
+   ========================= */
+
+.catalogPage{
+  display: grid;
+  gap: 16px;
+}
+
+.catalogHead{
+  border-radius: 22px;
+  padding: 18px 18px 14px;
+  background: rgba(0,0,0,.18);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 10px 35px rgba(0,0,0,.25);
+}
+
+.catalogHead__top{
+  display:flex;
+  gap: 16px;
+  align-items:flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.catalogTitle{
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.05;
+  letter-spacing: .2px;
+  text-shadow: 0 6px 24px rgba(0,0,0,.45);
+}
+
+.catalogBadge{
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  font-weight: 900;
+  font-size: 13px;
+  opacity: .9;
+}
+
+.catalogBody{
+  border-radius: 22px;
+  padding: 14px;
+  background: rgba(0,0,0,.12);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.06);
+}
+
+.catalogAlert{
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: rgba(255, 80, 80, .12);
+  border: 1px solid rgba(255, 80, 80, .25);
+}
+
+.catalogEmpty{
+  margin-top: 18px;
+  border-radius: 18px;
+  padding: 18px;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.10);
+  text-align: center;
+}
+
+.catalogEmpty__title{
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.catalogEmpty__text{
+  margin-top: 6px;
+  opacity: .75;
+  font-size: 14px;
+}
+
+/* =========================
+   Categories: MULTI-LINE (no horizontal scroll)
+   + hard reset so global button styles won't break it
+   ========================= */
+
+.catalogHead .catBar{
+  margin-top: 14px;
+  display:flex;
+  align-items:center;
+  gap: 10px;
+
+  padding: 10px;
+  border-radius: 18px;
+
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.10);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.22) inset;
+
+  /* главное: несколько строк */
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+/* reset only for category buttons */
+.catalogHead .catChip{
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+  box-shadow: none;
+  text-decoration: none;
+  font: inherit;
+  line-height: 1;
+  margin: 0;
+  outline: none;
+
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(0,0,0,.16);
+  color: rgba(255,255,255,.90);
+
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: .15px;
+  white-space: nowrap;
+
+  cursor: pointer;
+  transition: transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+
+.catalogHead .catChip:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.08);
+  border-color: rgba(255,255,255,.20);
+  box-shadow: 0 10px 24px rgba(0,0,0,.18);
+}
+
+.catalogHead .catChip.isActive{
+  background: rgba(255,170,0,.18);
+  border-color: rgba(255,170,0,.40);
+  box-shadow: 0 0 0 1px rgba(255,170,0,.18) inset, 0 12px 26px rgba(0,0,0,.22);
+  color: rgba(255,255,255,.96);
+}
+
+.catalogHead .catChip:focus-visible{
+  box-shadow: 0 0 0 3px rgba(255,170,0,.14), 0 0 0 1px rgba(255,170,0,.22) inset;
+}
+
+/* =========================
+   Pagination
+   ========================= */
+
+.pagination{
+  margin-top: 18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(0,0,0,.22);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.08);
+}
+
+.pgNums{
+  display:flex;
+  gap: 8px;
+  align-items:center;
+  flex-wrap: wrap;
+  justify-content:center;
+}
+
+.pgDots{
+  opacity: .65;
+  padding: 0 6px;
+  user-select: none;
+}
+
+.pgBtn{
+  border-radius: 999px;
+  padding: 10px 14px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  cursor:pointer;
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
+}
+
+.pgBtn:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.18);
+}
+
+.pgBtn:disabled{
+  opacity: .45;
+  cursor:not-allowed;
+  transform:none;
+}
+
+.pgNum{
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  cursor:pointer;
+  transition: transform .12s ease, background .12s ease, border-color .12s ease;
+}
+
+.pgNum:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,.10);
+  border-color: rgba(255,255,255,.18);
+}
+
+.pgNum.isActive{
+  background: rgba(255,170,0,.18);
+  border-color: rgba(255,170,0,.35);
+  box-shadow: 0 0 0 1px rgba(255,170,0,.20) inset;
+}
+
+@media (max-width: 640px){
+  .catalogTitle{ font-size: 28px; }
+  .catalogHead .catChip{ height: 36px; padding: 0 12px; }
+}
+/* =========================================================
+   HOME: натянуть HERO-картинку на внешнюю рамку steamFrame
+   (styles_home_only.css подключен ТОЛЬКО на главной)
+   ========================================================= */
+
+/* 1) рамка без внутренних паддингов (иначе сверху будет "полоса") */
+.steamFrame{
+  padding: 0 !important;
+  overflow: hidden; /* важно, чтобы скругления резали фон hero */
+}
+
+/* 2) контент внутри рамки тоже без паддинга */
+.steamFrame > .siteContent{
+  padding: 0 !important;
+}
+
+/* 3) HERO = full-bleed: без своей рамки/тени, радиус как у внешней рамки */
+.hero-poster.hero-poster--v2{
+  margin: 0 !important;
+
+  /* убираем "рамку в рамке" */
+  border: 0 !important;
+  box-shadow: none !important;
+
+  /* скругление сверху = как у внешней рамки */
+  border-radius: var(--FRAME_RADIUS) var(--FRAME_RADIUS) 0 0 !important;
+}
+
+/* чтобы оверлей/фейд тоже не ломали радиус */
+.hero-poster__overlay,
+.hero-poster__fade{
+  border-radius: var(--FRAME_RADIUS) var(--FRAME_RADIUS) 0 0 !important;
+}
+
+/* 4) Вернём отступы для секций НИЖЕ hero (каталог/новинки), иначе всё прилипнет */
+.home-block{
+  width: 100% !important;
+  margin: 22px 0 0 !important;
+  padding: 0 var(--FRAME_PAD_X) !important;
+}
+
+/* если хочешь, чтобы первый home-block был сразу после heroBump плотнее */
+.heroBump + .home-block{
+  margin-top: 18px !important;
 }

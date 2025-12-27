@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../lib/api.js";
-import CategoryPills from "../components/CategoryPills.jsx";
 import Skeleton from "../components/Skeleton.jsx";
 
 // ---------- helpers ----------
@@ -20,7 +19,6 @@ function imgUrl(src) {
   if (typeof src === "object" && src?.url) s = src.url;
   s = String(s);
 
-  // фикс для "media/..." (иначе resolveUrl делает /api/media/...)
   if (s.startsWith("media/")) s = "/" + s;
   if (s.startsWith("uploads/")) s = "/" + s;
 
@@ -89,7 +87,6 @@ function normalizeProducts(raw) {
     const priceRub =
         priceCents !== null ? priceCents / 100 : toNumber(pick(v0, ["price", "cost", "amount"], pick(p, ["price"], null)));
 
-    // если oldPrice не приходит — считаем по формуле (price * 1.0866)
     const oldRubFromApi =
         oldCents !== null
             ? oldCents / 100
@@ -101,24 +98,57 @@ function normalizeProducts(raw) {
   });
 }
 
+// нормальная пагинация с total + многоточиями
+function makePageModel(current, totalPages) {
+  if (!totalPages || totalPages <= 1) return [1];
+  if (totalPages <= 9) return Array.from({ length: totalPages }, (_, i) => i + 1);
+
+  const windowSize = 5;
+  const half = Math.floor(windowSize / 2);
+
+  let start = Math.max(2, current - half);
+  let end = Math.min(totalPages - 1, current + half);
+
+  while (end - start + 1 < windowSize && start > 2) start--;
+  while (end - start + 1 < windowSize && end < totalPages - 1) end++;
+
+  const pages = [1];
+  if (start > 2) pages.push("dots");
+  for (let p = start; p <= end; p++) pages.push(p);
+  if (end < totalPages - 1) pages.push("dots");
+  pages.push(totalPages);
+
+  return pages;
+}
+
 export default function Catalog() {
   const navigate = useNavigate();
-
   const [sp, setSp] = useSearchParams();
+
   const q = (sp.get("q") || "").trim();
   const category = (sp.get("category") || "").trim();
+
+  const LIMIT = 20;
+  const page = Math.max(1, Number(sp.get("page") || "1") || 1);
 
   const [cats, setCats] = useState([]);
   const [items, setItems] = useState([]);
 
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [done, setDone] = useState(false);
   const [err, setErr] = useState("");
 
+  const [total, setTotal] = useState(null);
+
+  const totalPages = useMemo(() => {
+    if (!total || !Number.isFinite(Number(total))) return null;
+    return Math.max(1, Math.ceil(Number(total) / LIMIT));
+  }, [total]);
+
+  const hasPrev = page > 1;
+  const hasNext = totalPages ? page < totalPages : items.length === LIMIT;
+
   const title = useMemo(() => {
-    if (q) return `Поиск: “${q}”`;
-    if (!category) return "Каталог";
+    if (!category) return q ? `Поиск: “${q}”` : "Каталог";
     const c = cats.find((x) => x.slug === category || String(x.id) === String(category));
     return c ? (c.name || c.title || "Каталог") : "Каталог";
   }, [q, category, cats]);
@@ -134,41 +164,71 @@ export default function Catalog() {
     };
   }, []);
 
-  async function fetchPage({ offset, append }) {
+  function setPage(nextPage) {
+    const next = new URLSearchParams(sp);
+    const safe = Math.max(1, nextPage);
+    const finalPage = totalPages ? Math.min(safe, totalPages) : safe;
+
+    if (finalPage <= 1) next.delete("page");
+    else next.set("page", String(finalPage));
+
+    setSp(next, { replace: true });
+  }
+
+  function setCategory(slug) {
+    const next = new URLSearchParams(sp);
+    if (!slug) next.delete("category");
+    else next.set("category", slug);
+    next.delete("page");
+    setSp(next, { replace: true });
+  }
+
+  async function fetchPage() {
     setErr("");
+    setLoading(true);
     try {
-      const page = await api.products({ q, category, limit: 12, offset });
-      const normalized = normalizeProducts(page);
+      const offset = (page - 1) * LIMIT;
+      const res = await api.products({ q, category, limit: LIMIT, offset });
 
-      if (append) setItems((prev) => [...prev, ...normalized]);
-      else setItems(normalized);
+      setItems(normalizeProducts(res));
 
-      setDone((Array.isArray(normalized) ? normalized.length : 0) < 12);
+      const t =
+          res?.total ??
+          res?.count ??
+          res?.meta?.total ??
+          res?.meta?.count ??
+          res?.pagination?.total ??
+          res?.pagination?.count ??
+          null;
+
+      setTotal(t);
+
+      const tp = t ? Math.max(1, Math.ceil(Number(t) / LIMIT)) : null;
+      if (tp && page > tp) setPage(tp);
     } catch (e) {
       setErr(e?.message || "Ошибка загрузки");
+      setItems([]);
+      setTotal(null);
+    } finally {
+      setLoading(false);
     }
   }
 
+  // при смене q/category — сброс на 1 страницу
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoading(true);
-      setDone(false);
-      setItems([]);
-      await fetchPage({ offset: 0, append: false });
-      if (alive) setLoading(false);
-    })();
-    return () => {
-      alive = false;
-    };
+    const current = Number(sp.get("page") || "1") || 1;
+    if (current !== 1) {
+      const next = new URLSearchParams(sp);
+      next.delete("page");
+      setSp(next, { replace: true });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, category]);
 
-  async function onLoadMore() {
-    setLoadingMore(true);
-    await fetchPage({ offset: items.length, append: true });
-    setLoadingMore(false);
-  }
+  useEffect(() => {
+    fetchPage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, category, page]);
 
   async function onAdd(p) {
     if (!p?.variantId) return;
@@ -190,58 +250,62 @@ export default function Catalog() {
     }
   }
 
-  return (
-      <div className="stack">
-        <section className="section">
-          <div className="section__head">
-            <h1 className="h1">{title}</h1>
+  const pageModel = useMemo(() => makePageModel(page, totalPages), [page, totalPages]);
 
-            <div className="right">
-              <label className="muted">Поиск</label>
-              <input
-                  className="input"
-                  value={q}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    const next = new URLSearchParams(sp);
-                    if (v.trim()) next.set("q", v);
-                    else next.delete("q");
-                    setSp(next, { replace: true });
-                  }}
-                  placeholder="Например: iPhone 15"
-              />
-            </div>
+  return (
+      <div className="catalogPage">
+        <section className="catalogHead">
+          <div className="catalogHead__top">
+            <h1 className="catalogTitle">{title}</h1>
+            {totalPages ? <div className="catalogBadge">{page} / {totalPages}</div> : null}
           </div>
 
-          <CategoryPills
-              categories={cats}
-              active={category}
-              onPick={(slug) => {
-                const next = new URLSearchParams(sp);
-                if (slug) next.set("category", slug);
-                else next.delete("category");
-                setSp(next, { replace: true });
-              }}
-          />
+          {/* категории: перенос в несколько строк */}
+          <div className="catBar">
+            <button
+                type="button"
+                className={`catChip ${!category ? "isActive" : ""}`}
+                onClick={() => setCategory("")}
+            >
+              Все
+            </button>
+
+            {cats.map((c) => {
+              const slug = c.slug ?? String(c.id);
+              const name = c.name || c.title || slug;
+              const active = category === slug || String(category) === String(c.id);
+
+              return (
+                  <button
+                      key={slug}
+                      type="button"
+                      className={`catChip ${active ? "isActive" : ""}`}
+                      onClick={() => setCategory(slug)}
+                      title={name}
+                  >
+                    {name}
+                  </button>
+              );
+            })}
+          </div>
         </section>
 
         {err && (
-            <div className="alert">
+            <div className="catalogAlert">
               <strong>Ошибка:</strong> {err}
             </div>
         )}
 
-        <section className="section">
+        <section className="catalogBody">
           <div className="newGrid newGrid--catalog">
             {loading
-                ? Array.from({ length: 12 }).map((_, i) => <Skeleton key={i} className="skeleton--new" />)
+                ? Array.from({ length: LIMIT }).map((_, i) => <Skeleton key={i} className="skeleton--new" />)
                 : items.map((p) => {
                   const slugOrId = encodeURIComponent(p.slug || p.id);
                   const productHref = `/product/${slugOrId}`;
 
-                  // бейдж скидки: показываем если есть цена
                   const showDiscount = !!toNumber(p.price);
-                  const discountPct = 8.66;
+                  const discountPct = 8.5;
 
                   return (
                       <Link key={p.id} className="newCard newCard--catalog" to={productHref}>
@@ -302,16 +366,37 @@ export default function Catalog() {
           </div>
 
           {!loading && !items.length && !err && (
-              <div className="empty">
-                <div className="empty__title">Ничего не нашли</div>
-                <div className="muted">Попробуйте другой запрос или снимите фильтр по категории.</div>
+              <div className="catalogEmpty">
+                <div className="catalogEmpty__title">Ничего не нашли</div>
+                <div className="catalogEmpty__text">Попробуйте снять фильтр или изменить запрос.</div>
               </div>
           )}
 
-          {!loading && items.length > 0 && !done && (
-              <div className="center">
-                <button className="btn btn--ghost" onClick={onLoadMore} disabled={loadingMore}>
-                  {loadingMore ? "Загружаем…" : "Показать ещё"}
+          {!loading && items.length > 0 && (totalPages ? totalPages > 1 : true) && (
+              <div className="pagination">
+                <button className="pgBtn" onClick={() => setPage(page - 1)} disabled={!hasPrev} type="button">
+                  ← Назад
+                </button>
+
+                <div className="pgNums">
+                  {pageModel.map((p, idx) =>
+                      p === "dots" ? (
+                          <span key={`d-${idx}`} className="pgDots">…</span>
+                      ) : (
+                          <button
+                              key={p}
+                              className={`pgNum ${p === page ? "isActive" : ""}`}
+                              onClick={() => setPage(p)}
+                              type="button"
+                          >
+                            {p}
+                          </button>
+                      )
+                  )}
+                </div>
+
+                <button className="pgBtn" onClick={() => setPage(page + 1)} disabled={!hasNext} type="button">
+                  Далее →
                 </button>
               </div>
           )}

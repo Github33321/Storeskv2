@@ -1,3 +1,4 @@
+// lib/cart.js
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { api } from './api.js'
 
@@ -45,7 +46,11 @@ export function CartProvider({ children }) {
     await refresh()
   }, [refresh])
 
-  const value = useMemo(() => ({ cart, loading, error, refresh, add, setQty, remove, clear }), [cart, loading, error, refresh, add, setQty, remove, clear])
+  const value = useMemo(
+      () => ({ cart, loading, error, refresh, add, setQty, remove, clear }),
+      [cart, loading, error, refresh, add, setQty, remove, clear]
+  )
+
   return <CartCtx.Provider value={value}>{children}</CartCtx.Provider>
 }
 
